@@ -5,6 +5,11 @@ import { useRouter, useParams } from 'next/navigation';
 import { supabase } from '../../../../lib/supabase';
 import Image from 'next/image';
 
+type Category = {
+  id: number;
+  name: string;
+};
+
 export default function EditBlog() {
   const params = useParams();
   const router = useRouter();
@@ -15,30 +20,31 @@ export default function EditBlog() {
   const [currentThumbnail, setCurrentThumbnail] = useState<string | null>(null);
   const [newThumbnail, setNewThumbnail] = useState<File | null>(null);
   const [newPreview, setNewPreview] = useState<string | null>(null);
+  const [categoryId, setCategoryId] = useState<number | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    async function fetchBlog() {
-      const { data, error: fetchError } = await supabase
-        .from('blogs')
-        .select('*')
-        .eq('id', id)
-        .single();
+    async function fetchData() {
+      // Fetch blog
+      const { data: blogData } = await supabase.from('blogs').select('*').eq('id', id).single();
+      
+      // Fetch categories
+      const { data: catData } = await supabase.from('blog_categories').select('id, name').order('name');
 
-      if (fetchError || !data) {
-        setError('Blog not found');
-        setTimeout(() => router.push('/blogs'), 2000);
-      } else {
-        setTitle(data.title);
-        setContent(data.content);
-        setCurrentThumbnail(data.thumbnail_url);
+      if (blogData) {
+        setTitle(blogData.title);
+        setContent(blogData.content);
+        setCurrentThumbnail(blogData.thumbnail_url);
+        setCategoryId(blogData.category_id);
       }
+      setCategories(catData || []);
       setIsFetching(false);
     }
-    fetchBlog();
-  }, [id, router]);
+    fetchData();
+  }, [id]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -77,6 +83,7 @@ export default function EditBlog() {
         title,
         content,
         thumbnail_url: finalThumbnail,
+        category_id: categoryId,
         updated_at: new Date().toISOString()
       })
       .eq('id', id);
@@ -90,15 +97,16 @@ export default function EditBlog() {
     setIsLoading(false);
   };
 
-  if (isFetching) return <div className="p-12">Loading...</div>;
+  if (isFetching) return <div className="p-12 text-center">Loading...</div>;
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-3xl mx-auto p-6">
       <h1 className="text-4xl font-bold mb-8">Edit Blog</h1>
 
       {error && <div className="mb-6 p-4 bg-red-900/50 border border-red-700 rounded-2xl">{error}</div>}
 
       <form onSubmit={handleSubmit} className="space-y-8">
+        {/* Thumbnail */}
         <div>
           <label className="block mb-2 text-sm font-medium">Thumbnail</label>
           {(currentThumbnail || newPreview) && (
@@ -109,14 +117,45 @@ export default function EditBlog() {
           <input type="file" accept="image/*" onChange={handleImageChange} className="block w-full" />
         </div>
 
+        {/* Category */}
         <div>
-          <label className="block mb-2 text-sm font-medium">Title</label>
-          <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} className="w-full px-6 py-4 bg-zinc-900 border border-zinc-800 rounded-3xl" required />
+          <label className="block text-sm font-medium mb-2">Category</label>
+          <select
+            value={categoryId || ''}
+            onChange={(e) => setCategoryId(e.target.value ? Number(e.target.value) : null)}
+            className="w-full px-6 py-4 bg-zinc-900 border border-zinc-800 rounded-3xl"
+          >
+            <option value="">No Category</option>
+            {categories.map((cat) => (
+              <option key={cat.id} value={cat.id}>
+                {cat.name}
+              </option>
+            ))}
+          </select>
         </div>
 
+        {/* Title */}
+        <div>
+          <label className="block mb-2 text-sm font-medium">Title</label>
+          <input 
+            type="text" 
+            value={title} 
+            onChange={(e) => setTitle(e.target.value)} 
+            className="w-full px-6 py-4 bg-zinc-900 border border-zinc-800 rounded-3xl" 
+            required 
+          />
+        </div>
+
+        {/* Content */}
         <div>
           <label className="block mb-2 text-sm font-medium">Content</label>
-          <textarea value={content} onChange={(e) => setContent(e.target.value)} rows={16} className="w-full px-6 py-4 bg-zinc-900 border border-zinc-800 rounded-3xl font-mono" required />
+          <textarea 
+            value={content} 
+            onChange={(e) => setContent(e.target.value)} 
+            rows={16} 
+            className="w-full px-6 py-4 bg-zinc-900 border border-zinc-800 rounded-3xl font-mono" 
+            required 
+          />
         </div>
 
         <div className="flex gap-4">

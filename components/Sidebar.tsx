@@ -1,13 +1,16 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Gamepad2, BookOpen, Plus } from 'lucide-react';
+import { Home, Gamepad2, BookOpen, Plus, Bolt, MailIcon, LucideSparkle } from 'lucide-react';
 
 const navItems = [
   // { name: 'Dashboard', href: '/', icon: Home },
   // { name: 'Games', href: '/games', icon: Gamepad2 },
+  { name: "Artworks", href: "/artworks", icon: Bolt },
   { name: 'Blogs', href: '/blogs', icon: BookOpen },
-  { name: 'New Blog', href: '/blogs/new', icon: Plus },
+  // { name: 'New Blog', href: '/blogs/new', icon: Plus },
+  { name: 'Subscribers', href: '/subscribers', icon: MailIcon },
+  { name: 'Support Inquiries', href: '/support', icon: LucideSparkle },
 ];
 
 export default function Sidebar() {
