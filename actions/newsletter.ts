@@ -2,13 +2,12 @@
 'use server'
 
 import { resend } from '@/lib/resend'
-import { createServerClient } from '@/lib/supabase/server'
 
 export async function sendTestEmail(toEmail: string) {
     try {
         const { data, error } = await resend.emails.send({
-            from: 'Nowhere Isle <onboarding@resend.dev>', // Testing purposes
-            //   from: 'Nowhere Isle <hello@yourdomain.com>', // ← change to your verified domain
+            from: 'Nowhere Isle <info@nowhereisle.com>', 
+
             to: toEmail,
             subject: 'Test email from Nowhere Isle',
             html: `

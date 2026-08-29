@@ -55,12 +55,16 @@ export default function SubscribersTable({
 
   // Export emails (one per line)
   const exportEmails = () => {
-    const emails = subscribers.map((s) => s.email).join('\n')
+    const emails = subscribers
+      .filter((s) => !s.unsubscribed_at)
+      .map((s) => s.email)
+      .join('\n')
+
     const blob = new Blob([emails], { type: 'text/plain' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `newsletter_subscribers_${new Date().toISOString().split('T')[0]}.txt`
+    a.download = `active_subscribers_${new Date().toISOString().split('T')[0]}.txt`
     a.click()
     URL.revokeObjectURL(url)
   }
@@ -89,6 +93,7 @@ export default function SubscribersTable({
           <thead>
             <tr className="border-b border-zinc-800 text-left text-sm text-zinc-400">
               <th className="px-6 py-4">Email</th>
+              <th className="px-6 py-4">Status</th>
               <th className="px-6 py-4">Note</th>
               <th className="px-6 py-4">Subscribed On</th>
               <th className="px-6 py-4 text-center">Actions</th>
@@ -98,6 +103,17 @@ export default function SubscribersTable({
             {filtered.map((sub) => (
               <tr key={sub.id} className="hover:bg-zinc-800/50 transition">
                 <td className="px-6 py-5 font-medium">{sub.email}</td>
+                <td className="px-6 py-5">
+                  {sub.unsubscribed_at ? (
+                    <span className="text-xs px-2 py-1 rounded-full bg-red-900/40 text-red-300">
+                      Unsubscribed
+                    </span>
+                  ) : (
+                    <span className="text-xs px-2 py-1 rounded-full bg-green-900/40 text-green-300">
+                      Active
+                    </span>
+                  )}
+                </td>
                 <td className="px-6 py-5">
                   {editingId === sub.id ? (
                     <input
@@ -116,6 +132,7 @@ export default function SubscribersTable({
                     </span>
                   )}
                 </td>
+
                 <td className="px-6 py-5 text-sm text-zinc-400">
                   {new Date(sub.created_at).toLocaleDateString()}
                 </td>

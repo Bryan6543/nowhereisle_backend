@@ -89,6 +89,7 @@ export default function NewCampaignPage() {
   return (
     <div className="p-8 max-w-4xl mx-auto space-y-6">
       <h1 className="text-4xl font-bold">New Campaign</h1>
+      
 
       <div>
         <label className="block text-sm mb-2">Subject</label>

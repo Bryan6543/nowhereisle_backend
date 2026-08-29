@@ -1,13 +1,39 @@
 'use client'
 
+'use client'
+
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { getCampaigns } from '@/actions/campaigns'
+import { getCampaigns, processScheduledCampaigns } from '@/actions/campaigns'
 import type { Campaign } from '@/types'
 
 export default function CampaignsPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [loading, setLoading] = useState(true)
+
+  const [cronMessage, setCronMessage] = useState('')
+  const [cronLoading, setCronLoading] = useState(false)
+
+  const handleProcessScheduled = async () => {
+    setCronLoading(true)
+    setCronMessage('Processing scheduled campaigns...')
+
+    try {
+      const result = await processScheduledCampaigns()
+      setCronMessage(
+        result.processed > 0
+          ? `✅ Processed ${result.processed} campaign(s)`
+          : 'No scheduled campaigns are due yet'
+      )
+
+      const data = await getCampaigns()
+      setCampaigns(data)
+    } catch (err: any) {
+      setCronMessage('❌ Error: ' + (err.message || 'Failed'))
+    }
+
+    setCronLoading(false)
+  }
 
   useEffect(() => {
     getCampaigns().then((data) => {
@@ -23,6 +49,17 @@ export default function CampaignsPage() {
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-4xl font-bold">Campaigns</h1>
+          <button
+            onClick={handleProcessScheduled}
+            disabled={cronLoading}
+            className="px-4 py-2 bg-zinc-700 hover:bg-zinc-600 rounded-xl text-sm disabled:opacity-50"
+          >
+            {cronLoading ? 'Processing...' : 'Process scheduled now'}
+          </button>
+
+          {cronMessage && (
+            <p className="text-sm text-zinc-400 mt-2">{cronMessage}</p>
+          )}
           <p className="text-zinc-400 mt-2">Drafts, scheduled, and sent emails</p>
         </div>
         <Link href="/campaigns/new" className="px-6 py-3 bg-white text-black rounded-2xl font-medium">

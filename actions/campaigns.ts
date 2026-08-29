@@ -63,7 +63,6 @@ export async function saveCampaign(input: {
       .single()
 
     if (error) return { success: false, error: error.message }
-    revalidatePath('/campaigns')
     return { success: true, campaign: data as Campaign }
   }
 
@@ -74,13 +73,13 @@ export async function saveCampaign(input: {
     .single()
 
   if (error) return { success: false, error: error.message }
-  revalidatePath('/campaigns')
   return { success: true, campaign: data as Campaign }
 }
 
 export async function sendCampaignNow(campaignId: string) {
   const supabase = createServerClient()
 
+  // 1. Load campaign
   const { data: campaign, error } = await supabase
     .from('newsletter_campaigns')
     .select('*')
@@ -95,12 +94,13 @@ export async function sendCampaignNow(campaignId: string) {
     return { success: false, error: 'Already sent' }
   }
 
-  // Mark as sending
+  // 2. Mark as sending
   await supabase
     .from('newsletter_campaigns')
     .update({ status: 'sending' })
     .eq('id', campaignId)
 
+  // 3. Get active subscribers (optionally filtered by tags)
   const subscribers = await getActiveSubscribers(campaign.segment_tags || [])
 
   if (subscribers.length === 0) {
@@ -108,27 +108,48 @@ export async function sendCampaignNow(campaignId: string) {
       .from('newsletter_campaigns')
       .update({ status: 'failed' })
       .eq('id', campaignId)
+
     return { success: false, error: 'No matching active subscribers' }
   }
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+  // 4. Public site URL used in unsubscribe links
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+
   let successCount = 0
 
+  // 5. Send to each subscriber
   for (const sub of subscribers) {
+    // Skip if token is missing
+    if (!sub.unsubscribe_token) {
+      console.error('Missing unsubscribe_token for', sub.email)
+      continue
+    }
+
     const unsubscribeUrl = `${siteUrl}/unsubscribe?token=${sub.unsubscribe_token}`
 
+    // IMPORTANT: footer is added here
     const htmlWithFooter = `
-      ${campaign.html_content}
-      <hr style="margin-top:40px;border:none;border-top:1px solid #eee;" />
-      <p style="font-size:12px;color:#888;text-align:center;">
-        You received this because you subscribed to Nowhere Isle.<br/>
-        <a href="${unsubscribeUrl}" style="color:#888;">Unsubscribe</a>
-      </p>
+      <div style="font-family: Arial, Helvetica, sans-serif; line-height: 1.6; color: #111;">
+        ${campaign.html_content}
+      </div>
+
+      <hr style="margin-top: 40px; border: none; border-top: 1px solid #e5e5e5;" />
+
+      <div style="font-size: 12px; line-height: 1.5; color: #888888; text-align: center; padding-top: 12px;">
+        <p style="margin: 0 0 8px 0;">
+          You received this email because you subscribed to Nowhere Isle updates.
+        </p>
+        <p style="margin: 0;">
+          <a href="${unsubscribeUrl}" style="color: #888888; text-decoration: underline;">
+            Unsubscribe
+          </a>
+        </p>
+      </div>
     `
 
     try {
       const { data, error: sendError } = await resend.emails.send({
-        from: 'Nowhere Isle <onboarding@resend.dev>', // change later
+        from: 'Nowhere Isle <info@nowhereisle.com>',
         to: sub.email,
         subject: campaign.subject,
         html: htmlWithFooter,
@@ -140,8 +161,14 @@ export async function sendCampaignNow(campaignId: string) {
         ],
       })
 
-      if (!sendError && data?.id) {
+      if (sendError) {
+        console.error('Resend error for', sub.email, sendError)
+        continue
+      }
+
+      if (data?.id) {
         successCount++
+
         await supabase.from('newsletter_email_events').insert({
           campaign_id: campaignId,
           email: sub.email,
@@ -154,6 +181,7 @@ export async function sendCampaignNow(campaignId: string) {
     }
   }
 
+  // 6. Update campaign final status
   await supabase
     .from('newsletter_campaigns')
     .update({
@@ -164,6 +192,7 @@ export async function sendCampaignNow(campaignId: string) {
     .eq('id', campaignId)
 
   revalidatePath('/campaigns')
+
   return {
     success: successCount > 0,
     sent: successCount,
@@ -176,11 +205,16 @@ export async function processScheduledCampaigns() {
   const supabase = createServerClient()
   const now = new Date().toISOString()
 
-  const { data: due } = await supabase
+  const { data: due, error } = await supabase
     .from('newsletter_campaigns')
     .select('id')
     .eq('status', 'scheduled')
     .lte('scheduled_at', now)
+
+  if (error) {
+    console.error('processScheduledCampaigns error:', error)
+    return { processed: 0 }
+  }
 
   if (!due || due.length === 0) {
     return { processed: 0 }

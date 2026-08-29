@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import type { Artwork, Category } from "@/types";
 
 // Action Files 
@@ -120,107 +121,25 @@ export default function AdminArtworks() {
   // ---------- UI (almost the same as before) ----------
   return (
     <div className="flex flex-col gap-10 p-8">
-      <div>
-        <h1 className="text-4xl font-bold tracking-tight">Artworks</h1>
-        <p className="text-zinc-400 mt-2">Manage your artworks</p>
-      </div>
-
-      <div className="flex flex-col md:flex-row gap-10">
-        {/* Add New Artwork Form */}
-        <div className="p-8 rounded-3xl shadow mb-12">
-          <h2 className="text-2xl font-semibold mb-6">Add New Artwork</h2>
-          <form onSubmit={handleUpload} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium mb-2">Title *</label>
-                <input
-                  type="text"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  required
-                  className="w-full border border-gray-300 rounded-xl px-4 py-3"
-                  placeholder="Artwork Title"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">Category *</label>
-                <select
-                  value={selectedCatForUpload}
-                  onChange={(e) => setSelectedCatForUpload(e.target.value)}
-                  required
-                  className="w-full border border-gray-300 rounded-xl px-4 py-3"
-                >
-                  <option value="">Select Category</option>
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.name}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">Description</label>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className="w-full border border-gray-300 rounded-xl px-4 py-3 h-24"
-                placeholder="Optional description..."
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">Image *</label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => setFile(e.target.files?.[0] || null)}
-                required
-                className="w-full border border-gray-300 rounded-xl px-4 py-3"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={uploading}
-              className="bg-black text-white px-10 py-4 rounded-2xl font-medium hover:bg-gray-800 disabled:bg-gray-400"
-            >
-              {uploading ? "Uploading..." : "Upload Artwork"}
-            </button>
-          </form>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-4xl font-bold tracking-tight">Artworks</h1>
+          <p className="text-zinc-400 mt-2">Manage your artworks</p>
         </div>
-
-        {/* Categories Section */}
-        <div className="p-8 rounded-3xl shadow mb-12">
-          <div className="flex flex-col gap-4 items-center mb-6">
-            <h2 className="text-2xl font-semibold">Categories</h2>
-            <button
-              onClick={handleCreateCategory}
-              className="bg-green-600 text-white px-6 py-2.5 rounded-xl text-sm font-medium"
-            >
-              + New Category
-            </button>
-          </div>
-
-          <div className="flex flex-wrap gap-3">
-            {categories.map((cat) => (
-              <div
-                key={cat.id}
-                className="flex items-center gap-2 border-white/20 border px-5 py-2 rounded-2xl"
-              >
-                <span className="font-medium">{cat.name}</span>
-                <button
-                  onClick={() => handleDeleteCategory(cat.id, cat.name)}
-                  className="text-red-500 hover:text-red-700 font-bold text-lg leading-none"
-                >
-                  ×
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+        <div className="flex gap-4">
+          {/* <Link
+            href="/"
+            className="px-6 py-3 border border-zinc-700 hover:bg-zinc-800 rounded-2xl transition-colors"
+          >
+            Manage Categories
+          </Link> */}
+          <Link
+            href="/artworks/new"
+            className="inline-flex items-center gap-2 bg-white text-black px-6 py-3 rounded-2xl font-medium hover:bg-zinc-200 transition-colors"
+          >
+            New Artwork
+          </Link>
+        </div></div>
 
       {/* Artworks List */}
       <div>
@@ -231,11 +150,10 @@ export default function AdminArtworks() {
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`px-6 py-3 rounded-2xl text-sm font-medium transition-all ${
-                selectedCategory === cat
+              className={`px-6 py-3 rounded-2xl text-sm font-medium transition-all ${selectedCategory === cat
                   ? "bg-white/5 border"
                   : "bg-black text-white"
-              }`}
+                }`}
             >
               {cat}
             </button>

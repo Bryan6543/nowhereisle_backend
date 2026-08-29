@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Gamepad2, BookOpen, Plus, Bolt, MailIcon, LucideSparkle } from 'lucide-react';
+import { Home, Gamepad2, BookOpen, Plus, Bolt, MailIcon, LucideSparkle , TableConfigIcon} from 'lucide-react';
 
 const navItems = [
   // { name: 'Dashboard', href: '/', icon: Home },
@@ -10,6 +10,7 @@ const navItems = [
   { name: 'Blogs', href: '/blogs', icon: BookOpen },
   // { name: 'New Blog', href: '/blogs/new', icon: Plus },
   { name: 'Subscribers', href: '/subscribers', icon: MailIcon },
+  { name: 'Welcome Email', href: ' /email-templates/welcome', icon: TableConfigIcon },
   { name: 'Campaigns', href: '/campaigns', icon: MailIcon },
   { name: 'Support Inquiries', href: '/support', icon: LucideSparkle },
 ];
@@ -31,11 +32,10 @@ export default function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 px-4 py-3 rounded-2xl mb-1 text-sm font-medium transition-all ${
-                isActive 
-                  ? 'bg-white text-black' 
+              className={`flex items-center gap-3 px-4 py-3 rounded-2xl mb-1 text-sm font-medium transition-all ${isActive
+                  ? 'bg-white text-black'
                   : 'hover:bg-zinc-900 text-zinc-400 hover:text-white'
-              }`}
+                }`}
             >
               <Icon className="w-5 h-5" />
               {item.name}

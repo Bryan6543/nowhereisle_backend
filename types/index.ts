@@ -57,3 +57,42 @@ export type Campaign = {
   created_at: string
   sent_at?: string | null
 }
+
+export type SupportStatus =
+  | 'open'
+  | 'in_progress'
+  | 'waiting_on_customer'
+  | 'resolved'
+  | 'closed'
+
+export type SupportTicket = {
+  id: string
+  ticket_number: string
+  public_token: string
+  report_type: 'studio' | 'game' | string
+  game_report_type?: string | null
+  subject: string
+  description: string
+  email?: string | null
+  status: SupportStatus
+  priority: 'low' | 'normal' | 'high' | string
+  created_at: string
+  updated_at: string
+}
+
+export type SupportMessage = {
+  id: string
+  ticket_id: string
+  sender_type: 'customer' | 'admin'
+  sender_name?: string | null
+  message: string
+  created_at: string
+}
+
+export type EmailTemplate = {
+  id: string
+  name: string
+  subject: string
+  html_content: string
+  updated_at?: string
+}

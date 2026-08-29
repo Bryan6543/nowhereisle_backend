@@ -1,169 +1,93 @@
-// app/isle_dashboard/support/page.tsx
-"use client";
+'use client'
 
-import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
-
-type Inquiry = {
-  id: number;
-  report_type: string;
-  game_report_type: string | null;
-  subject: string;
-  description: string;
-  email: string | null;
-  status: string;
-  created_at: string;
-};
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import { getSupportTickets } from '@/actions/support'
+import type { SupportTicket } from '@/types'
 
 export default function SupportAdminPage() {
-  const [inquiries, setInquiries] = useState<Inquiry[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<"all" | "new" | "in_progress" | "resolved">("all");
-  const [search, setSearch] = useState("");
+  const [tickets, setTickets] = useState<SupportTicket[]>([])
+  const [loading, setLoading] = useState(true)
+  const [filter, setFilter] = useState('all')
+  const [search, setSearch] = useState('')
 
   useEffect(() => {
-    fetchInquiries();
-  }, []);
-
-  async function fetchInquiries() {
-    try {
-      const { data, error } = await supabase
-        .from("support_inquiries")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      setInquiries(data || []);
-    } catch (err) {
-      console.error("Failed to fetch inquiries:", err);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const updateStatus = async (id: number, newStatus: string) => {
-    const { error } = await supabase
-      .from("support_inquiries")
-      .update({ status: newStatus })
-      .eq("id", id);
-
-    if (!error) {
-      setInquiries(prev =>
-        prev.map(i => (i.id === id ? { ...i, status: newStatus } : i))
-      );
-    }
-  };
-
-  const filteredInquiries = inquiries
-    .filter(i => {
-      if (filter === "all") return true;
-      return i.status === filter;
+    getSupportTickets().then((data) => {
+      setTickets(data)
+      setLoading(false)
     })
-    .filter(i =>
-      i.subject.toLowerCase().includes(search.toLowerCase()) ||
-      (i.email && i.email.toLowerCase().includes(search.toLowerCase()))
-    );
+  }, [])
 
-  if (loading) return <div className="p-8 text-center">Loading support inquiries...</div>;
+  const filtered = tickets
+    .filter((t) => (filter === 'all' ? true : t.status === filter))
+    .filter(
+      (t) =>
+        t.subject.toLowerCase().includes(search.toLowerCase()) ||
+        t.ticket_number.toLowerCase().includes(search.toLowerCase()) ||
+        (t.email || '').toLowerCase().includes(search.toLowerCase())
+    )
+
+  if (loading) return <div className="p-8">Loading tickets...</div>
 
   return (
     <div className="p-8 max-w-7xl mx-auto">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-4xl font-bold tracking-tight">Support Inquiries</h1>
-          <p className="text-zinc-400 mt-2">Manage user messages and reports</p>
-        </div>
-        <button
-          onClick={fetchInquiries}
-          className="px-5 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition"
-        >
-          Refresh
-        </button>
-      </div>
+      <h1 className="text-4xl font-bold mb-2">Support Tickets</h1>
+      <p className="text-zinc-400 mb-8">Manage and reply to customer requests</p>
 
-      {/* Filters & Search */}
       <div className="flex flex-col md:flex-row gap-4 mb-6">
         <input
-          type="text"
-          placeholder="Search subject or email..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="bg-zinc-900 border border-zinc-700 rounded-xl px-5 py-3 flex-1 focus:outline-none focus:border-zinc-600"
+          placeholder="Search ticket, subject, email..."
+          className="bg-zinc-900 border border-zinc-700 rounded-xl px-5 py-3 flex-1"
         />
-
-        <div className="flex gap-2">
-          {["all", "new", "in_progress", "resolved"].map((status) => (
+        <div className="flex gap-2 flex-wrap">
+          {['all', 'open', 'in_progress', 'waiting_on_customer', 'resolved', 'closed'].map((s) => (
             <button
-              key={status}
-              onClick={() => setFilter(status as any)}
-              className={`px-5 py-3 rounded-xl text-sm font-medium transition ${
-                filter === status
-                  ? "bg-red-600 text-white"
-                  : "bg-zinc-900 hover:bg-zinc-800 border border-zinc-700"
+              key={s}
+              onClick={() => setFilter(s)}
+              className={`px-4 py-2 rounded-xl text-sm ${
+                filter === s ? 'bg-red-600' : 'bg-zinc-900 border border-zinc-700'
               }`}
             >
-              {status === "all" ? "All" : status.replace("_", " ")}
+              {s.replaceAll('_', ' ')}
             </button>
           ))}
         </div>
       </div>
 
-      <div className="bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-800">
+      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-zinc-800 text-left text-sm text-zinc-400">
-              <th className="px-6 py-5">Type</th>
-              <th className="px-6 py-5">Subject</th>
-              <th className="px-6 py-5">Email</th>
-              <th className="px-6 py-5">Date</th>
-              <th className="px-6 py-5">Status</th>
-              <th className="px-6 py-5 text-center">Actions</th>
+            <tr className="text-left text-sm text-zinc-400 border-b border-zinc-800">
+              <th className="px-6 py-4">Ticket</th>
+              <th className="px-6 py-4">Subject</th>
+              <th className="px-6 py-4">Email</th>
+              <th className="px-6 py-4">Status</th>
+              <th className="px-6 py-4">Date</th>
+              <th className="px-6 py-4">Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-800">
-            {filteredInquiries.map((inquiry) => (
-              <tr key={inquiry.id} className="hover:bg-zinc-800/50">
-                <td className="px-6 py-6">
-                  <div className="capitalize">
-                    {inquiry.report_type}
-                    {inquiry.game_report_type && ` • ${inquiry.game_report_type}`}
-                  </div>
+            {filtered.map((t) => (
+              <tr key={t.id} className="hover:bg-zinc-800/40">
+                <td className="px-6 py-4 font-medium">{t.ticket_number}</td>
+                <td className="px-6 py-4">{t.subject}</td>
+                <td className="px-6 py-4 text-zinc-400">{t.email || '—'}</td>
+                <td className="px-6 py-4 capitalize">{t.status.replaceAll('_', ' ')}</td>
+                <td className="px-6 py-4 text-zinc-400">
+                  {new Date(t.created_at).toLocaleDateString()}
                 </td>
-                <td className="px-6 py-6 font-medium">{inquiry.subject}</td>
-                <td className="px-6 py-6 text-sm text-zinc-400">
-                  {inquiry.email || <span className="italic opacity-50">No email</span>}
-                </td>
-                <td className="px-6 py-6 text-sm text-zinc-400">
-                  {new Date(inquiry.created_at).toLocaleDateString()}
-                </td>
-                <td className="px-6 py-6">
-                  <select
-                    value={inquiry.status}
-                    onChange={(e) => updateStatus(inquiry.id, e.target.value)}
-                    className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1 text-sm"
-                  >
-                    <option value="new">New</option>
-                    <option value="in_progress">In Progress</option>
-                    <option value="resolved">Resolved</option>
-                  </select>
-                </td>
-                <td className="px-6 py-6 text-center">
-                  <button
-                    onClick={() => alert(`Description:\n\n${inquiry.description}`)}
-                    className="text-blue-400 hover:text-blue-500 text-sm font-medium"
-                  >
-                    View Details
-                  </button>
+                <td className="px-6 py-4">
+                  <Link href={`/support/${t.id}`} className="text-blue-400 hover:text-blue-300">
+                    Open
+                  </Link>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-
-        {filteredInquiries.length === 0 && (
-          <p className="text-center py-20 text-zinc-500">No inquiries found.</p>
-        )}
       </div>
     </div>
-  );
+  )
 }

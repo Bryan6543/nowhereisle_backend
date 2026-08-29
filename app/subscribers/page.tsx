@@ -9,6 +9,7 @@ import type { Subscriber } from '@/types'
 export default function SubscribersPage() {
   const [subscribers, setSubscribers] = useState<Subscriber[]>([])
   const [count, setCount] = useState(0)
+  const [activeCount, setActiveCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [testStatus, setTestStatus] = useState('')      // ← add this
@@ -17,9 +18,10 @@ export default function SubscribersPage() {
     async function load() {
       try {
         setError(null)
-        const { subscribers, count } = await getSubscribers()
+        const { subscribers, count, activeCount } = await getSubscribers()
         setSubscribers(subscribers)
         setCount(count)
+        setActiveCount(activeCount)
       } catch (err: any) {
         console.error(err)
         setError(err.message || 'Failed to load subscribers')
@@ -73,6 +75,13 @@ export default function SubscribersPage() {
           <p className="text-zinc-400 mt-2">
             Total Subscribers:{' '}
             <span className="text-white font-semibold">{count}</span>
+          </p>
+          <p className="text-zinc-400 mt-2">
+            Total: <span className="text-white font-semibold">{count}</span>
+            {' · '}
+            Active: <span className="text-white font-semibold">{activeCount}</span>
+            {' · '}
+            Unsubscribed: <span className="text-white font-semibold">{count - activeCount}</span>
           </p>
         </div>
 
