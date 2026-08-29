@@ -1,72 +1,69 @@
-"use client";
+'use client'
 
-import { useState, useEffect } from "react";
-import { supabase } from "../../lib/supabase";
-
-type Subscriber = {
-  id: number;
-  email: string;
-  note: string | null;
-  created_at: string;
-};
+import { useState } from 'react'
+import {
+  updateSubscriberNote,
+  deleteSubscriber,
+} from '@/actions/subscribers'
+import type { Subscriber } from '@/types'
 
 export default function SubscribersTable({
   initialSubscribers,
   totalCount,
 }: {
-  initialSubscribers: Subscriber[];
-  totalCount: number;
+  initialSubscribers: Subscriber[]
+  totalCount: number
 }) {
-  const [subscribers, setSubscribers] = useState(initialSubscribers);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [editNote, setEditNote] = useState("");
-  const [search, setSearch] = useState("");
+  const [subscribers, setSubscribers] = useState(initialSubscribers)
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [editNote, setEditNote] = useState('')
+  const [search, setSearch] = useState('')
 
-  const filtered = subscribers.filter(s =>
+  const filtered = subscribers.filter((s) =>
     s.email.toLowerCase().includes(search.toLowerCase())
-  );
+  )
 
   // Update note
-  const updateNote = async (id: number) => {
-    const { error } = await supabase
-      .from("newsletter_subscribers")
-      .update({ note: editNote.trim() || null })
-      .eq("id", id);
+  const handleUpdateNote = async (id: number) => {
+    const result = await updateSubscriberNote(id, editNote)
 
-    if (!error) {
-      setSubscribers(prev =>
-        prev.map(s => (s.id === id ? { ...s, note: editNote.trim() || null } : s))
-      );
-      setEditingId(null);
-      setEditNote("");
+    if (result.success) {
+      setSubscribers((prev) =>
+        prev.map((s) =>
+          s.id === id ? { ...s, note: editNote.trim() || null } : s
+        )
+      )
+      setEditingId(null)
+      setEditNote('')
+    } else {
+      alert(result.error || 'Failed to update note')
     }
-  };
+  }
 
   // Delete subscriber
-  const deleteSubscriber = async (id: number) => {
-    if (!confirm("Delete this subscriber?")) return;
+  const handleDelete = async (id: number) => {
+    if (!confirm('Delete this subscriber?')) return
 
-    const { error } = await supabase
-      .from("newsletter_subscribers")
-      .delete()
-      .eq("id", id);
+    const result = await deleteSubscriber(id)
 
-    if (!error) {
-      setSubscribers(prev => prev.filter(s => s.id !== id));
+    if (result.success) {
+      setSubscribers((prev) => prev.filter((s) => s.id !== id))
+    } else {
+      alert(result.error || 'Failed to delete')
     }
-  };
+  }
 
-  // Export emails (one per line - easy for bulk mail)
+  // Export emails (one per line)
   const exportEmails = () => {
-    const emails = subscribers.map(s => s.email).join("\n");
-    const blob = new Blob([emails], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `newsletter_subscribers_${new Date().toISOString().split("T")[0]}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
+    const emails = subscribers.map((s) => s.email).join('\n')
+    const blob = new Blob([emails], { type: 'text/plain' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `newsletter_subscribers_${new Date().toISOString().split('T')[0]}.txt`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
 
   return (
     <div className="bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-800">
@@ -113,7 +110,9 @@ export default function SubscribersTable({
                     />
                   ) : (
                     <span className="text-zinc-400 text-sm">
-                      {sub.note || <span className="italic opacity-50">No note</span>}
+                      {sub.note || (
+                        <span className="italic opacity-50">No note</span>
+                      )}
                     </span>
                   )}
                 </td>
@@ -124,7 +123,7 @@ export default function SubscribersTable({
                   {editingId === sub.id ? (
                     <div className="flex gap-2 justify-center">
                       <button
-                        onClick={() => updateNote(sub.id)}
+                        onClick={() => handleUpdateNote(sub.id)}
                         className="text-green-400 hover:text-green-500 text-sm font-medium"
                       >
                         Save
@@ -140,15 +139,15 @@ export default function SubscribersTable({
                     <div className="flex gap-4 justify-center">
                       <button
                         onClick={() => {
-                          setEditingId(sub.id);
-                          setEditNote(sub.note || "");
+                          setEditingId(sub.id)
+                          setEditNote(sub.note || '')
                         }}
                         className="text-blue-400 hover:text-blue-500"
                       >
                         Edit Note
                       </button>
                       <button
-                        onClick={() => deleteSubscriber(sub.id)}
+                        onClick={() => handleDelete(sub.id)}
                         className="text-red-400 hover:text-red-500"
                       >
                         Delete
@@ -166,5 +165,5 @@ export default function SubscribersTable({
         <p className="text-center py-12 text-zinc-500">No subscribers found.</p>
       )}
     </div>
-  );
+  )
 }

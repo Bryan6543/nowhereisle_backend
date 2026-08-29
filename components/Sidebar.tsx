@@ -10,6 +10,7 @@ const navItems = [
   { name: 'Blogs', href: '/blogs', icon: BookOpen },
   // { name: 'New Blog', href: '/blogs/new', icon: Plus },
   { name: 'Subscribers', href: '/subscribers', icon: MailIcon },
+  { name: 'Campaigns', href: '/campaigns', icon: MailIcon },
   { name: 'Support Inquiries', href: '/support', icon: LucideSparkle },
 ];
 

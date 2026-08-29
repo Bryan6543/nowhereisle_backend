@@ -2,25 +2,17 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import type { Artwork, Category } from "@/types";
 
-type Artwork = {
-  id: string;
-  title: string;
-  description?: string;
-  image_url: string;
-  category: string;
-};
-
-type Category = {
-  id: string;
-  name: string;
-};
+// Action Files 
+import { getArtworks, createArtwork, deleteArtwork } from "@/actions/artworks";
+import { getCategories, createCategory, deleteCategory } from "@/actions/categories";
 
 export default function AdminArtworks() {
+  // ---------- STATE (UI only) ----------
   const [artworks, setArtworks] = useState<Artwork[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState("All");
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [loading, setLoading] = useState(true);
 
   // Form states
@@ -30,23 +22,15 @@ export default function AdminArtworks() {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
 
-  const backendUrl = "http://localhost:3001";
-
-  const fetchData = async () => {
+  // ---------- LOAD DATA ----------
+  // This function now calls Server Actions instead of fetch()
+  const loadData = async () => {
     setLoading(true);
     try {
-      const artUrl =
-        selectedCategory === "All"
-          ? `${backendUrl}/api/artworks`
-          : `${backendUrl}/api/artworks?category=${selectedCategory}`;
-
-      const [artRes, catRes] = await Promise.all([
-        fetch(artUrl),
-        fetch(`${backendUrl}/api/categories`),
+      const [artData, catData] = await Promise.all([
+        getArtworks(selectedCategory),
+        getCategories(),
       ]);
-
-      const artData = artRes.ok ? await artRes.json() : [];
-      const catData = catRes.ok ? await catRes.json() : [];
 
       setArtworks(artData);
       setCategories(catData);
@@ -56,55 +40,84 @@ export default function AdminArtworks() {
     setLoading(false);
   };
 
+  // Load data when the page opens or when the selected category changes
   useEffect(() => {
-    fetchData();
-  }, [selectedCategory, refreshTrigger]);
+    loadData();
+  }, [selectedCategory]);
 
-  const uploadArtwork = async (e: React.FormEvent) => {
+  // ---------- UPLOAD ARTWORK ----------
+  const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title || !selectedCatForUpload || !file)
+
+    if (!title || !selectedCatForUpload || !file) {
       return alert("Please fill required fields");
+    }
 
     setUploading(true);
+
+    // Create FormData and send it to the Server Action
     const formData = new FormData();
     formData.append("file", file);
     formData.append("title", title);
     formData.append("category", selectedCatForUpload);
     formData.append("description", description);
 
-    try {
-      const res = await fetch(`${backendUrl}/api/artworks`, {
-        method: "POST",
-        body: formData,
-      });
-      if (res.ok) {
-        alert("Artwork uploaded!");
-        setTitle("");
-        setDescription("");
-        setFile(null);
-        setSelectedCatForUpload("");
-        setRefreshTrigger((p) => p + 1);
-      }
-    } catch (err) {
-      alert("Upload failed");
+    const result = await createArtwork(formData);
+
+    if (result.success) {
+      alert("Artwork uploaded!");
+      // Clear the form
+      setTitle("");
+      setDescription("");
+      setFile(null);
+      setSelectedCatForUpload("");
+      // Reload the list
+      loadData();
+    } else {
+      alert(result.error || "Upload failed");
     }
+
     setUploading(false);
   };
 
-  const deleteArtwork = async (id: string) => {
+  // ---------- DELETE ARTWORK ----------
+  const handleDeleteArtwork = async (id: string) => {
     if (!confirm("Delete this artwork?")) return;
-    await fetch(`${backendUrl}/api/artworks/${id}`, { method: "DELETE" });
-    setRefreshTrigger((p) => p + 1);
+
+    const result = await deleteArtwork(id);
+    if (result.success) {
+      loadData(); // refresh the list
+    } else {
+      alert(result.error || "Failed to delete");
+    }
   };
 
-  const deleteCategory = async (id: string, name: string) => {
-    if (!confirm(`Delete category "${name}" and all associated artworks?`))
-      return;
+  // ---------- CREATE CATEGORY ----------
+  const handleCreateCategory = async () => {
+    const name = prompt("New category name:");
+    if (!name?.trim()) return;
 
-    await fetch(`${backendUrl}/api/categories/${id}`, { method: "DELETE" });
-    setRefreshTrigger((p) => p + 1);
+    const result = await createCategory(name);
+    if (result.success) {
+      loadData();
+    } else {
+      alert(result.error || "Failed to create category");
+    }
   };
 
+  // ---------- DELETE CATEGORY ----------
+  const handleDeleteCategory = async (id: string, name: string) => {
+    if (!confirm(`Delete category "${name}" and all associated artworks?`)) return;
+
+    const result = await deleteCategory(id);
+    if (result.success) {
+      loadData();
+    } else {
+      alert(result.error || "Failed to delete category");
+    }
+  };
+
+  // ---------- UI (almost the same as before) ----------
   return (
     <div className="flex flex-col gap-10 p-8">
       <div>
@@ -116,12 +129,10 @@ export default function AdminArtworks() {
         {/* Add New Artwork Form */}
         <div className="p-8 rounded-3xl shadow mb-12">
           <h2 className="text-2xl font-semibold mb-6">Add New Artwork</h2>
-          <form onSubmit={uploadArtwork} className="space-y-6">
+          <form onSubmit={handleUpload} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium mb-2">
-                  Title *
-                </label>
+                <label className="block text-sm font-medium mb-2">Title *</label>
                 <input
                   type="text"
                   value={title}
@@ -132,9 +143,7 @@ export default function AdminArtworks() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">
-                  Category *
-                </label>
+                <label className="block text-sm font-medium mb-2">Category *</label>
                 <select
                   value={selectedCatForUpload}
                   onChange={(e) => setSelectedCatForUpload(e.target.value)}
@@ -152,9 +161,7 @@ export default function AdminArtworks() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">
-                Description
-              </label>
+              <label className="block text-sm font-medium mb-2">Description</label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -189,17 +196,7 @@ export default function AdminArtworks() {
           <div className="flex flex-col gap-4 items-center mb-6">
             <h2 className="text-2xl font-semibold">Categories</h2>
             <button
-              onClick={async () => {
-                const name = prompt("New category name:");
-                if (name?.trim()) {
-                  await fetch(`${backendUrl}/api/categories`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ name: name.trim() }),
-                  });
-                  setRefreshTrigger((p) => p + 1);
-                }
-              }}
+              onClick={handleCreateCategory}
               className="bg-green-600 text-white px-6 py-2.5 rounded-xl text-sm font-medium"
             >
               + New Category
@@ -214,7 +211,7 @@ export default function AdminArtworks() {
               >
                 <span className="font-medium">{cat.name}</span>
                 <button
-                  onClick={() => deleteCategory(cat.id, cat.name)}
+                  onClick={() => handleDeleteCategory(cat.id, cat.name)}
                   className="text-red-500 hover:text-red-700 font-bold text-lg leading-none"
                 >
                   ×
@@ -224,7 +221,8 @@ export default function AdminArtworks() {
           </div>
         </div>
       </div>
-      {/* Artworks */}
+
+      {/* Artworks List */}
       <div>
         <h2 className="text-2xl font-semibold mb-6">All Artworks</h2>
 
@@ -268,7 +266,7 @@ export default function AdminArtworks() {
                   <p className="text-sm text-gray-500 pt-2">{art.category}</p>
 
                   <button
-                    onClick={() => deleteArtwork(art.id)}
+                    onClick={() => handleDeleteArtwork(art.id)}
                     className="mt-4 text-red-600 hover:text-red-700 text-sm"
                   >
                     Delete

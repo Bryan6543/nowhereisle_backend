@@ -1,91 +1,74 @@
-'use client';
+'use client'
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { supabase } from '../../../lib/supabase';
-import Image from 'next/image';
-
-type Category = {
-  id: number;
-  name: string;
-};
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import Image from 'next/image'
+import { createBlog } from '@/actions/blogs'
+import { getBlogCategories } from '@/actions/blog-categories'
+import type { BlogCategory } from '@/types'
 
 export default function NewBlog() {
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [thumbnail, setThumbnail] = useState<File | null>(null);
-  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
-  const [categoryId, setCategoryId] = useState<number | null>(null);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
-  const router = useRouter();
+  const router = useRouter()
 
-  // Fetch categories
+  const [title, setTitle] = useState('')
+  const [content, setContent] = useState('')
+  const [thumbnail, setThumbnail] = useState<File | null>(null)
+  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null)
+  const [categoryId, setCategoryId] = useState<number | null>(null)
+  const [categories, setCategories] = useState<BlogCategory[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  // Load categories when page opens
   useEffect(() => {
-    async function fetchCategories() {
-      const { data } = await supabase.from('blog_categories').select('id, name').order('name');
-      setCategories(data || []);
+    async function loadCategories() {
+      const data = await getBlogCategories()
+      setCategories(data)
     }
-    fetchCategories();
-  }, []);
+    loadCategories()
+  }, [])
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+    const file = e.target.files?.[0]
     if (file) {
-      setThumbnail(file);
-      setThumbnailPreview(URL.createObjectURL(file));
+      setThumbnail(file)
+      setThumbnailPreview(URL.createObjectURL(file))
     }
-  };
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError('');
+    e.preventDefault()
+    setIsLoading(true)
+    setError('')
 
-    let thumbnailUrl = null;
+    const formData = new FormData()
+    formData.append('title', title)
+    formData.append('content', content)
+    if (categoryId) formData.append('category_id', String(categoryId))
+    if (thumbnail) formData.append('thumbnail', thumbnail)
 
-    if (thumbnail) {
-      const fileExt = thumbnail.name.split('.').pop();
-      const fileName = `${Date.now()}.${fileExt}`;
+    const result = await createBlog(formData)
 
-      const { error: uploadError } = await supabase.storage
-        .from('blog-thumbnails')
-        .upload(fileName, thumbnail, { upsert: true });
-
-      if (uploadError) {
-        setError('Image upload failed: ' + uploadError.message);
-        setIsLoading(false);
-        return;
-      }
-
-      const { data: publicUrl } = supabase.storage.from('blog-thumbnails').getPublicUrl(fileName);
-      thumbnailUrl = publicUrl.publicUrl;
-    }
-
-    const { error: insertError } = await supabase.from('blogs').insert([{
-      title,
-      content,
-      thumbnail_url: thumbnailUrl,
-      category_id: categoryId,
-    }]);
-
-    if (insertError) {
-      setError(insertError.message);
+    if (result.success) {
+      alert('Blog created successfully!')
+      router.push('/blogs')
+      router.refresh()
     } else {
-      alert('Blog created successfully!');
-      router.push('/isle_dashboard/lore_wisdom');
-      router.refresh();
+      setError(result.error || 'Something went wrong')
     }
 
-    setIsLoading(false);
-  };
+    setIsLoading(false)
+  }
 
   return (
     <div className="max-w-3xl mx-auto p-6">
       <h1 className="text-4xl font-bold tracking-tight mb-8">Create New Blog</h1>
 
-      {error && <div className="mb-6 p-4 bg-red-950 border border-red-800 rounded-2xl text-red-400">{error}</div>}
+      {error && (
+        <div className="mb-6 p-4 bg-red-950 border border-red-800 rounded-2xl text-red-400">
+          {error}
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-8">
         {/* Thumbnail */}
@@ -146,7 +129,11 @@ export default function NewBlog() {
         </div>
 
         <div className="flex gap-4">
-          <button type="button" onClick={() => router.back()} className="px-8 py-3 border border-zinc-700 rounded-2xl">
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="px-8 py-3 border border-zinc-700 rounded-2xl"
+          >
             Cancel
           </button>
           <button
@@ -159,5 +146,5 @@ export default function NewBlog() {
         </div>
       </form>
     </div>
-  );
+  )
 }

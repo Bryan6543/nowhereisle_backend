@@ -1,52 +1,71 @@
-'use client';
+'use client'
 
-import { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
-
-type Category = {
-  id: number;
-  name: string;
-  slug: string;
-};
+import { useState, useEffect } from 'react'
+import {
+  getBlogCategories,
+  createBlogCategory,
+  updateBlogCategory,
+  deleteBlogCategory,
+} from '@/actions/blog-categories'
+import type { BlogCategory } from '@/types'
 
 export default function BlogCategoriesPage() {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [newName, setNewName] = useState('');
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [editName, setEditName] = useState('');
+  const [categories, setCategories] = useState<BlogCategory[]>([])
+  const [newName, setNewName] = useState('')
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [editName, setEditName] = useState('')
+  const [loading, setLoading] = useState(true)
 
+  // Load categories when the page opens
   useEffect(() => {
-    fetchCategories();
-  }, []);
+    loadCategories()
+  }, [])
 
-  async function fetchCategories() {
-    const { data } = await supabase.from('blog_categories').select('*').order('name');
-    setCategories(data || []);
+  async function loadCategories() {
+    setLoading(true)
+    const data = await getBlogCategories()
+    setCategories(data)
+    setLoading(false)
   }
 
-  const createCategory = async () => {
-    if (!newName.trim()) return;
-    const slug = newName.toLowerCase().replace(/\s+/g, '-');
+  // ---------- CREATE ----------
+  const handleCreate = async () => {
+    if (!newName.trim()) return
 
-    const { error } = await supabase.from('blog_categories').insert({ name: newName.trim(), slug });
-    if (!error) {
-      setNewName('');
-      fetchCategories();
+    const result = await createBlogCategory(newName)
+
+    if (result.success) {
+      setNewName('')
+      loadCategories()
+    } else {
+      alert(result.error || 'Failed to create category')
     }
-  };
+  }
 
-  const updateCategory = async (id: number) => {
-    const slug = editName.toLowerCase().replace(/\s+/g, '-');
-    await supabase.from('blog_categories').update({ name: editName, slug }).eq('id', id);
-    setEditingId(null);
-    fetchCategories();
-  };
+  // ---------- UPDATE ----------
+  const handleUpdate = async (id: number) => {
+    const result = await updateBlogCategory(id, editName)
 
-  const deleteCategory = async (id: number) => {
-    if (!confirm('Delete this category?')) return;
-    await supabase.from('blog_categories').delete().eq('id', id);
-    fetchCategories();
-  };
+    if (result.success) {
+      setEditingId(null)
+      loadCategories()
+    } else {
+      alert(result.error || 'Failed to update category')
+    }
+  }
+
+  // ---------- DELETE ----------
+  const handleDelete = async (id: number) => {
+    if (!confirm('Delete this category?')) return
+
+    const result = await deleteBlogCategory(id)
+
+    if (result.success) {
+      loadCategories()
+    } else {
+      alert(result.error || 'Failed to delete category')
+    }
+  }
 
   return (
     <div className="p-8 max-w-4xl mx-auto">
@@ -62,47 +81,84 @@ export default function BlogCategoriesPage() {
             onChange={(e) => setNewName(e.target.value)}
             placeholder="Category Name"
             className="flex-1 px-6 py-4 bg-black border border-zinc-700 rounded-2xl"
+            onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
           />
-          <button onClick={createCategory} className="px-8 py-4 bg-white text-black rounded-2xl font-medium">
+          <button
+            onClick={handleCreate}
+            className="px-8 py-4 bg-white text-black rounded-2xl font-medium"
+          >
             Create
           </button>
         </div>
       </div>
 
       {/* List */}
-      <div className="space-y-4">
-        {categories.map((cat) => (
-          <div key={cat.id} className="bg-zinc-900 p-6 rounded-3xl flex justify-between items-center">
-            {editingId === cat.id ? (
-              <input
-                type="text"
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-                className="flex-1 px-6 py-3 bg-black border border-zinc-700 rounded-2xl"
-              />
-            ) : (
-              <div>
-                <p className="font-semibold">{cat.name}</p>
-                <p className="text-sm text-zinc-500">/{cat.slug}</p>
-              </div>
-            )}
-
-            <div className="flex gap-3">
+      {loading ? (
+        <p className="text-zinc-400">Loading categories...</p>
+      ) : categories.length === 0 ? (
+        <p className="text-zinc-400">No categories yet.</p>
+      ) : (
+        <div className="space-y-4">
+          {categories.map((cat) => (
+            <div
+              key={cat.id}
+              className="bg-zinc-900 p-6 rounded-3xl flex justify-between items-center"
+            >
               {editingId === cat.id ? (
-                <>
-                  <button onClick={() => updateCategory(cat.id)} className="text-green-400">Save</button>
-                  <button onClick={() => setEditingId(null)} className="text-zinc-400">Cancel</button>
-                </>
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="flex-1 px-6 py-3 bg-black border border-zinc-700 rounded-2xl mr-4"
+                  onKeyDown={(e) => e.key === 'Enter' && handleUpdate(cat.id)}
+                />
               ) : (
-                <>
-                  <button onClick={() => { setEditingId(cat.id); setEditName(cat.name); }} className="text-blue-400">Edit</button>
-                  <button onClick={() => deleteCategory(cat.id)} className="text-red-400">Delete</button>
-                </>
+                <div>
+                  <p className="font-semibold">{cat.name}</p>
+                  <p className="text-sm text-zinc-500">/{cat.slug}</p>
+                </div>
               )}
+
+              <div className="flex gap-3">
+                {editingId === cat.id ? (
+                  <>
+                    <button
+                      onClick={() => handleUpdate(cat.id)}
+                      className="text-green-400"
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={() => setEditingId(null)}
+                      className="text-zinc-400"
+                    >
+                      Cancel
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => {
+                        setEditingId(cat.id)
+                        setEditName(cat.name)
+                      }}
+                      className="text-blue-400"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(cat.id)}
+                      className="text-red-400"
+                    >
+                      Delete
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
-  );
+  )
 }
