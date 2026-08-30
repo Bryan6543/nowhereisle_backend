@@ -7,7 +7,7 @@ import Link from "next/link";
 
 // Action Files 
 import { getArtworks, createArtwork, deleteArtwork } from "@/actions/artworks";
-import { getCategories, createCategory, deleteCategory } from "@/actions/categories";
+import { getCategories, createCategory, deleteCategory } from "@/actions/artwork-categories";
 
 export default function AdminArtworks() {
   // ---------- STATE (UI only) ----------

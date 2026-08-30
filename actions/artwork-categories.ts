@@ -11,7 +11,7 @@ export async function getCategories(): Promise<Category[]> {
   const supabase = createServerClient()
 
   const { data, error } = await supabase
-    .from('categories')
+    .from('artwork_categories')
     .select('*')
     .order('name')
 
@@ -34,7 +34,7 @@ export async function createCategory(name: string) {
   }
 
   const { error } = await supabase
-    .from('categories')
+    .from('artwork_categories')
     .insert({ name: name.trim() })
 
   if (error) {
@@ -52,7 +52,7 @@ export async function createCategory(name: string) {
 export async function deleteCategory(id: string) {
   const supabase = createServerClient()
 
-  const { error } = await supabase.from('categories').delete().eq('id', id)
+  const { error } = await supabase.from('artwork_categories').delete().eq('id', id)
 
   if (error) {
     console.error('deleteCategory error:', error)
