@@ -169,3 +169,5 @@ export default function EditBlog() {
     </div>
   )
 }
+
+export const dynamic = 'force-dynamic'

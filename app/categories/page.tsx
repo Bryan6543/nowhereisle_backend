@@ -162,3 +162,5 @@ export default function BlogCategoriesPage() {
     </div>
   )
 }
+
+export const dynamic = 'force-dynamic'

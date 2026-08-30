@@ -106,3 +106,5 @@ export default function SubscribersPage() {
     </div>
   )
 }
+
+export const dynamic = 'force-dynamic'

@@ -198,3 +198,5 @@ export default function AdminArtworks() {
     </div>
   );
 }
+
+export const dynamic = 'force-dynamic'

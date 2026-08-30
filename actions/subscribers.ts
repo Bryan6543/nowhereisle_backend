@@ -4,8 +4,10 @@ import { createServerClient } from '@/lib/supabase/server'
 import { resend } from '@/lib/resend'
 import { revalidatePath } from 'next/cache'
 import type { Subscriber } from '@/types'
+import { unstable_noStore as noStore } from 'next/cache'
 
 export async function getSubscribers() {
+  noStore()
   const supabase = createServerClient()
 
   const { data, error, count } = await supabase
@@ -29,6 +31,7 @@ export async function getSubscribers() {
 }
 
 export async function getActiveSubscribers(tags: string[] = []) {
+  noStore()
   const supabase = createServerClient()
 
   let query = supabase

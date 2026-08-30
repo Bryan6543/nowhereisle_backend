@@ -3,11 +3,13 @@
 import { createServerClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import type { Category } from '@/types'
+import { unstable_noStore as noStore } from 'next/cache'
 
 // ============================================
 // GET all categories
 // ============================================
 export async function getCategories(): Promise<Category[]> {
+  noStore()
   const supabase = createServerClient()
 
   const { data, error } = await supabase

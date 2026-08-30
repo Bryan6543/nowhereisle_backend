@@ -5,8 +5,10 @@ import { resend } from '@/lib/resend'
 import { revalidatePath } from 'next/cache'
 import type { Campaign } from '@/types'
 import { getActiveSubscribers } from './subscribers'
+import { unstable_noStore as noStore } from 'next/cache'
 
 export async function getCampaigns(): Promise<Campaign[]> {
+  noStore()
   const supabase = createServerClient()
   const { data, error } = await supabase
     .from('newsletter_campaigns')
@@ -21,6 +23,7 @@ export async function getCampaigns(): Promise<Campaign[]> {
 }
 
 export async function getCampaign(id: string): Promise<Campaign | null> {
+  noStore()
   const supabase = createServerClient()
   const { data, error } = await supabase
     .from('newsletter_campaigns')

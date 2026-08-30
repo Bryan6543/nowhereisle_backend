@@ -91,3 +91,5 @@ export default function SupportAdminPage() {
     </div>
   )
 }
+
+export const dynamic = 'force-dynamic'

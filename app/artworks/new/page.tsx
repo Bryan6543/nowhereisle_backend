@@ -241,3 +241,5 @@ export default function AdminArtworks() {
 
   );
 }
+
+export const dynamic = 'force-dynamic'

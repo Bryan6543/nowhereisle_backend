@@ -143,3 +143,5 @@ export default function NewCampaignPage() {
     </div>
   )
 }
+
+export const dynamic = 'force-dynamic'

@@ -3,11 +3,13 @@
 import { createServerClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import type { Artwork } from '@/types'
+import { unstable_noStore as noStore } from 'next/cache'
 
 // ============================================
 // GET all artworks (optionally filter by category)
 // ============================================
 export async function getArtworks(category?: string): Promise<Artwork[]> {
+  noStore()
   const supabase = createServerClient()
 
   let query = supabase

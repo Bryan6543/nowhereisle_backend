@@ -4,6 +4,7 @@ import { createServerClient } from '@/lib/supabase/server'
 import { resend } from '@/lib/resend'
 import { revalidatePath } from 'next/cache'
 import type { SupportMessage, SupportStatus, SupportTicket } from '@/types'
+import { unstable_noStore as noStore } from 'next/cache'
 
 function siteUrl() {
   return process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
@@ -72,8 +73,8 @@ export async function createSupportTicket(input: {
   // First message = original description
   await supabase.from('support_messages').insert({
     ticket_id: ticket.id,
-    sender_type: 'customer',
-    sender_name: input.email || 'Customer',
+    sender_type: 'User',
+    sender_name: input.email || 'User',
     message: input.description.trim(),
   })
 
@@ -107,6 +108,7 @@ export async function createSupportTicket(input: {
 // ADMIN: list tickets
 // ============================================
 export async function getSupportTickets() {
+  noStore()
   const supabase = createServerClient()
 
   const { data, error } = await supabase
@@ -126,6 +128,7 @@ export async function getSupportTickets() {
 // ADMIN/PUBLIC: get ticket by id
 // ============================================
 export async function getSupportTicketById(id: string) {
+  noStore()
   const supabase = createServerClient()
   const { data, error } = await supabase
     .from('support_tickets')
@@ -141,6 +144,7 @@ export async function getSupportTicketById(id: string) {
 // PUBLIC: get ticket by token (no login)
 // ============================================
 export async function getSupportTicketByToken(token: string) {
+  noStore()
   const supabase = createServerClient()
   const { data, error } = await supabase
     .from('support_tickets')
@@ -156,6 +160,7 @@ export async function getSupportTicketByToken(token: string) {
 // Messages
 // ============================================
 export async function getSupportMessages(ticketId: string) {
+  noStore()
   const supabase = createServerClient()
   const { data, error } = await supabase
     .from('support_messages')
@@ -245,8 +250,8 @@ export async function replyAsCustomer(token: string, message: string) {
 
   const { error } = await supabase.from('support_messages').insert({
     ticket_id: ticket.id,
-    sender_type: 'customer',
-    sender_name: ticket.email || 'Customer',
+    sender_type: 'user',
+    sender_name: ticket.email || 'User',
     message: message.trim(),
   })
 

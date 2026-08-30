@@ -326,3 +326,5 @@ export default function CampaignDetailPage() {
     </div>
   )
 }
+
+export const dynamic = 'force-dynamic'

@@ -124,3 +124,5 @@ export default function SupportTicketDetailPage() {
     </div>
   )
 }
+
+export const dynamic = 'force-dynamic'

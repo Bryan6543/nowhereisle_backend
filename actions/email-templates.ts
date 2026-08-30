@@ -4,6 +4,7 @@ import { createServerClient } from '@/lib/supabase/server'
 import { resend } from '@/lib/resend'
 import { revalidatePath } from 'next/cache'
 import type { EmailTemplate } from '@/types'
+import { unstable_noStore as noStore } from 'next/cache'
 
 function applyVariables(input: string, vars: Record<string, string>) {
   let output = input
@@ -14,6 +15,7 @@ function applyVariables(input: string, vars: Record<string, string>) {
 }
 
 export async function getEmailTemplate(id: string): Promise<EmailTemplate | null> {
+  noStore()
   const supabase = createServerClient()
 
   const { data, error } = await supabase

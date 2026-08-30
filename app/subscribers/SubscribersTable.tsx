@@ -184,3 +184,5 @@ export default function SubscribersTable({
     </div>
   )
 }
+
+export const dynamic = 'force-dynamic'

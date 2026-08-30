@@ -3,6 +3,7 @@
 import { createServerClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import type { BlogCategory } from '@/types'
+import { unstable_noStore as noStore } from 'next/cache'
 
 // Helper: turn "My Category" → "my-category"
 function createSlug(name: string) {
@@ -13,6 +14,7 @@ function createSlug(name: string) {
 // GET all blog categories
 // ============================================
 export async function getBlogCategories(): Promise<BlogCategory[]> {
+  noStore()
   const supabase = createServerClient()
 
   const { data, error } = await supabase

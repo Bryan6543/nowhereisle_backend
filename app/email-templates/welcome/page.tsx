@@ -127,3 +127,5 @@ export default function WelcomeEmailTemplatePage() {
     </div>
   )
 }
+
+export const dynamic = 'force-dynamic'

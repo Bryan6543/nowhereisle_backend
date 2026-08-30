@@ -148,3 +148,5 @@ export default function NewBlog() {
     </div>
   )
 }
+
+export const dynamic = 'force-dynamic'
