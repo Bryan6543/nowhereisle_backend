@@ -78,7 +78,7 @@ export async function createSupportTicket(input: {
     message: input.description.trim(),
   })
 
-  const viewUrl = `${siteUrl()}/support/ticket/${ticket.public_token}`
+  const viewUrl = `${siteUrl()}/isle/support/ticket/${ticket.public_token}`
 
   // Confirmation email (if email provided)
   if (ticket.email) {

@@ -1,20 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupportTicket } from '@/actions/support'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
-  'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+const allowedOrigins = [
+  'https://www.nowhereisle.com',
+  'https://nowhereisle.com',
+  'http://localhost:3000',
+]
+
+function getCorsHeaders(req: NextRequest) {
+  const origin = req.headers.get('origin') || ''
+  const allow = allowedOrigins.includes(origin) ? origin : allowedOrigins[0]
+
+  return {
+    'Access-Control-Allow-Origin': allow,
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  }
 }
 
-export async function OPTIONS() {
+export async function OPTIONS(req: NextRequest) {
   return new NextResponse(null, {
     status: 204,
-    headers: corsHeaders,
+    headers: getCorsHeaders(req),
   })
 }
 
 export async function POST(req: NextRequest) {
+  const corsHeaders = getCorsHeaders(req)
+
   try {
     const body = await req.json()
 
